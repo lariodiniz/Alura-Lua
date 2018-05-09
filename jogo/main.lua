@@ -7,8 +7,30 @@ aviao_14bis = {
     largura = 55,
     altura = 63,
     x = LARGURA_TELA / 2 - 64 / 2,
-    y = ALTURA_TELA - 64 / 2
+    y = ALTURA_TELA - 64 / 2,
+    tiros = {}
 }
+
+function daTiro()
+    disparo:play()
+    local tiro = {
+        x = aviao_14bis.x + aviao_14bis.largura / 2,
+        y = aviao_14bis.y,
+        largura = 16,
+        altura = 16
+    }
+    table.insert(aviao_14bis.tiros, tiro)
+end
+
+function moveTiros()
+    for i = #aviao_14bis.tiros,1,-1 do
+        if aviao_14bis.tiros[i].y > 0 then
+            aviao_14bis.tiros[i].y = aviao_14bis.tiros[i].y -1
+        else
+            table.remove(aviao_14bis.tiros, i)
+        end
+    end
+end
 
 meteoros = {}
 
@@ -31,6 +53,8 @@ function criaMeteoro()
     }
     table.insert(meteoros, meteoro)
 end
+
+
 
 function removeMeteoros()
     for i = #meteoros, 1 , -1 do
@@ -63,13 +87,21 @@ function mov14bis()
 end
 
 function destroiAviao()
+
+    destruicao:play()
+
     aviao_14bis.src = "imagens/explosao_nave.png"
     aviao_14bis.imagem = love.graphics.newImage(aviao_14bis.src)
     aviao_14bis.largura = 67
     aviao_14bis.altura = 77
 end
 
-function checaColisoes()
+function trocaMusicaDeFundo()
+    musica_ambiente:stop()
+    game_over:play()
+end
+
+function checaColicaoComAviao()
     for k, meteoro in pairs(meteoros) do
         if temColisao(
             meteoro.x, 
@@ -80,10 +112,37 @@ function checaColisoes()
             aviao_14bis.y, 
             aviao_14bis.largura,
             aviao_14bis.altura) then
+                trocaMusicaDeFundo()
                 destroiAviao()
                 FIM_JOGO = true
         end
-    end  
+    end 
+end
+
+function checaColicaoComTiro()
+    for i = #aviao_14bis.tiros, 1, -1 do
+        for j = #meteoros, 1, -1 do
+            if temColisao(
+                aviao_14bis.tiros[i].x, 
+                aviao_14bis.tiros[i].y, 
+                aviao_14bis.tiros[i].largura,
+                aviao_14bis.tiros[i].altura,
+                meteoros[j].x, 
+                meteoros[j].y, 
+                meteoros[j].largura,
+                meteoros[j].altura) then
+                    
+                    table.remove(aviao_14bis.tiros, i)
+                    table.remove(meteoros, j)
+                    break
+            end
+        end
+    end
+end
+
+function checaColisoes()
+    checaColicaoComAviao()
+    checaColicaoComTiro()    
 end;
 
 function love.load()
@@ -96,8 +155,15 @@ function love.load()
 
     aviao_14bis.imagem = love.graphics.newImage(aviao_14bis.src)
     meteoro_img = love.graphics.newImage("imagens/meteoro.png")
+    tiro_img = love.graphics.newImage("imagens/tiro.png")
 
-    x, y, w, h = 20, 20, 60, 20
+    musica_ambiente = love.audio.newSource("audios/ambiente.wav", "static")
+    musica_ambiente:setLooping(true)
+    musica_ambiente:play()
+
+    destruicao = love.audio.newSource("audios/destruicao.wav", "static")
+    game_over = love.audio.newSource("audios/game_over.wav", "static")
+    disparo = love.audio.newSource("audios/disparo.wav", "static")
 end
 
 
@@ -112,8 +178,16 @@ function love.update(dt)
             criaMeteoro()
         end
         moveMeteoros()
-
+        moveTiros()
         checaColisoes()
+    end
+end
+
+function love.keypressed(tecla)
+    if tecla == "escape" then
+        love.event.quit()
+    elseif tecla == "space" then
+        daTiro()
     end
 end
 
@@ -124,5 +198,9 @@ function love.draw()
    
     for k, meteoro in pairs(meteoros) do
         love.graphics.draw(meteoro_img, meteoro.x, meteoro.y)
-    end    
+    end  
+    
+    for k, tiro in pairs(aviao_14bis.tiros) do
+        love.graphics.draw(tiro_img, tiro.x, tiro.y)
+    end  
 end

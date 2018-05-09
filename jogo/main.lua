@@ -1,7 +1,9 @@
 LARGURA_TELA = 320
 ALTURA_TELA = 480
 MAX_METEOROS = 12
-
+FIM_JOGO = false
+METEOROS_ATINGIDOS = 0
+TOTAL_METEOROS = 5
 aviao_14bis = {
     src = "imagens/14bis.png",
     largura = 55,
@@ -131,7 +133,7 @@ function checaColicaoComTiro()
                 meteoros[j].y, 
                 meteoros[j].largura,
                 meteoros[j].altura) then
-                    
+                    METEOROS_ATINGIDOS = METEOROS_ATINGIDOS + 1
                     table.remove(aviao_14bis.tiros, i)
                     table.remove(meteoros, j)
                     break
@@ -139,6 +141,14 @@ function checaColicaoComTiro()
         end
     end
 end
+
+function checaObjetivoConcluido()
+    if METEOROS_ATINGIDOS >= TOTAL_METEOROS then
+        VENCEDOR = true
+        trocaMusicaDeFundo()
+        vencedor_som:play()
+    end
+end;
 
 function checaColisoes()
     checaColicaoComAviao()
@@ -152,6 +162,8 @@ function love.load()
     love.window.setTitle("14bis vc Meteoros")
     
     background = love.graphics.newImage("imagens/background.png")
+    gameover_png = love.graphics.newImage("imagens/gameover.png")
+    vencedor_png = love.graphics.newImage("imagens/vencedor.png")
 
     aviao_14bis.imagem = love.graphics.newImage(aviao_14bis.src)
     meteoro_img = love.graphics.newImage("imagens/meteoro.png")
@@ -163,12 +175,14 @@ function love.load()
 
     destruicao = love.audio.newSource("audios/destruicao.wav", "static")
     game_over = love.audio.newSource("audios/game_over.wav", "static")
+    vencedor_som = love.audio.newSource("audios/winner.wav", "static")
+    
     disparo = love.audio.newSource("audios/disparo.wav", "static")
 end
 
 
 function love.update(dt)
-    if not FIM_JOGO then
+    if not FIM_JOGO and not VENCEDOR then
         if love.keyboard.isDown('w','a','s','d') then
             mov14bis()
         end
@@ -180,6 +194,7 @@ function love.update(dt)
         moveMeteoros()
         moveTiros()
         checaColisoes()
+        checaObjetivoConcluido()
     end
 end
 
@@ -196,6 +211,7 @@ function love.draw()
     love.graphics.draw(background, 0,0)
     love.graphics.draw(aviao_14bis.imagem, aviao_14bis.x,aviao_14bis.y)
    
+    love.graphics.print("Meteoros restantes: ".. TOTAL_METEOROS - METEOROS_ATINGIDOS, 1, 1);
     for k, meteoro in pairs(meteoros) do
         love.graphics.draw(meteoro_img, meteoro.x, meteoro.y)
     end  
@@ -203,4 +219,11 @@ function love.draw()
     for k, tiro in pairs(aviao_14bis.tiros) do
         love.graphics.draw(tiro_img, tiro.x, tiro.y)
     end  
+    if FIM_JOGO then
+        love.graphics.draw(gameover_png, LARGURA_TELA / 2 - gameover_png:getWidth() / 2, ALTURA_TELA / 2 - gameover_png:getHeight() / 2)
+    end
+    
+    if VENCEDOR then
+        love.graphics.draw(vencedor_png, LARGURA_TELA / 2 - vencedor_png:getWidth() / 2, ALTURA_TELA / 2 - vencedor_png:getHeight() / 2)
+    end
 end
